@@ -1,0 +1,37 @@
+{
+    "modelVersion": "v1-logreg-credit-zk",
+    "featureNames": [
+        "duration",
+        "credit_amount",
+        "installment_commitment",
+        "age"
+    ],
+    "scale": 1000,
+    "weights": [
+        -274,
+        -236,
+        -189,
+        359
+    ],
+    "bias": 916,
+    "scalerMean": [
+        20.903,
+        3271.258,
+        2.973,
+        35.546
+    ],
+    "scalerScale": [
+        12.052783537424043,
+        2821.3251545038192,
+        1.1181551770662246,
+        11.36977941738537
+    ],
+    "accuracy": 0.725,
+    "modelHash": "b8941942071c111187c41debad6bbee8d9e242755f2e89d15db4847716d4966c",
+    "exampleRaw": [
+        18.0,
+        3190.0,
+        2.0,
+        24.0
+    ]
+}

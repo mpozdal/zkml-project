@@ -1,16 +1,12 @@
 {
-    "weights": [
-        "-274",
-        "-236",
-        "-189",
-        "359"
-    ],
-    "bias": "916000",
     "client_input": [
         "-240",
         "-28",
         "-870",
         "-1015"
     ],
-    "expected_decision": "1"
+    "expected_decision": "1",
+    "input_hash": "de4e4ff4912459c00624e8b616430416451f69f70392fe7996279d8dc7d41f0c",
+    "output_hash": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+    "model_hash": "b8941942071c111187c41debad6bbee8d9e242755f2e89d15db4847716d4966c"
 }
