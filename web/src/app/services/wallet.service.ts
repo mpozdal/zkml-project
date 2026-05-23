@@ -1,26 +1,25 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { ethers } from 'ethers';
+
+const SEPOLIA_CHAIN_ID = '0xaa36a7';
 
 @Injectable({ providedIn: 'root' })
 export class WalletService {
   public readonly userAddress = signal<string | null>(null);
   public readonly walletError = signal<string | null>(null);
+  public readonly chainId = signal<string | null>(null);
+
+  public readonly isCorrectNetwork = computed(() => {
+    const id = this.chainId();
+    return id?.toLowerCase() === SEPOLIA_CHAIN_ID;
+  });
 
   public async connectWallet(): Promise<void> {
     try {
       this.walletError.set(null);
-
       await this.checkIfWalletIsConnected();
     } catch (error: unknown) {
-      let message = 'An unknown error occurred';
-
-      if (error instanceof Error && error.message) {
-        message = error.message;
-      } else if (typeof error === 'string') {
-        message = error;
-      }
-
-      this.walletError.set(message);
+      this.walletError.set(this.toErrorMessage(error));
     }
   }
 
@@ -29,7 +28,7 @@ export class WalletService {
 
     if (!ethereum) {
       throw new Error(
-        'MetaMask (or another Ethereum wallet) is not detected. Please install MetaMask from https://metamask.io or enable an Ethereum provider in your browser to continue.',
+        'MetaMask was not detected. Install the extension from https://metamask.io and refresh the page.',
       );
     }
 
@@ -39,6 +38,9 @@ export class WalletService {
     if (accounts.length > 0) {
       this.userAddress.set(accounts[0]);
     }
+
+    const chainId = await provider.send('eth_chainId', []);
+    this.applyChainId(chainId);
 
     this.setupEventListeners();
   }
@@ -60,6 +62,37 @@ export class WalletService {
       this.userAddress.set(accounts[0]);
     });
 
+    ethereum.on('chainChanged', (chainId: string) => {
+      this.applyChainId(chainId);
+    });
+
     this.listenersAttached = true;
+  }
+
+  private applyChainId(chainId: string): void {
+    this.chainId.set(chainId);
+
+    if (chainId.toLowerCase() !== SEPOLIA_CHAIN_ID) {
+      this.walletError.set('Wrong network. Switch MetaMask to Sepolia (chain ID 11155111).');
+      return;
+    }
+
+    const currentError = this.walletError();
+
+    if (currentError?.includes('network') || currentError?.includes('Sepolia')) {
+      this.walletError.set(null);
+    }
+  }
+
+  private toErrorMessage(error: unknown): string {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    return 'An unknown error occurred while connecting the wallet.';
   }
 }
