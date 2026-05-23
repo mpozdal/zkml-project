@@ -1,33 +1,63 @@
 pragma circom 2.0.6;
 
 include "circuits/comparators.circom";
+include "circuits/bitify.circom";
 
-template CreditClassifier(n_inputs) {
-    signal input client_input[n_inputs];
-    signal input weights[n_inputs];
-    signal input bias;
-    signal input expected_decision;
+template CreditClassifier() {
 
-    signal intermediate_products[n_inputs];
-    signal cumulative_sum[n_inputs];
+    // -----------------------------
+    // INPUTS & OUTPUTS
+    // -----------------------------
+    signal input x[4];
+    signal output y;
 
-    for (var i = 0; i < n_inputs; i++) {
-        intermediate_products[i] <== client_input[i] * weights[i];
+    // -----------------------------
+    // CONSTANTS
+    // -----------------------------
+    var w[4] = [-274, -236, -189, 359];
+    var b = 916;
+
+    // -----------------------------
+    // RANGE CHECK & SIGNED CONVERSION
+    // -----------------------------
+    component xBits[4];
+    signal xSigned[4];
+
+    for (var i = 0; i < 4; i++) {
+        xBits[i] = Num2Bits(32);
+        xBits[i].in <== x[i];
+
+        xSigned[i] <== x[i] - xBits[i].out[31] * (1 << 32);
     }
 
-    cumulative_sum[0] <== intermediate_products[0];
-    for (var i = 1; i < n_inputs; i++) {
-        cumulative_sum[i] <== cumulative_sum[i-1] + intermediate_products[i];
+    // -----------------------------
+    // ACCUMULATOR 
+    // -----------------------------
+    signal score[5];
+    score[0] <== b;
+
+    for (var i = 0; i < 4; i++) {
+        score[i + 1] <== score[i] + xSigned[i] * w[i];
     }
 
-    signal final_score;
-    final_score <== cumulative_sum[n_inputs-1] + bias;
+    // -----------------------------
+    // SIGN CHECK (score >= 0)
+    // -----------------------------
+    // Max score to ~2.27 * 10^12 (mieści się w 42 bitach). 
+    // Dodajemy 2^43, aby zagwarantować, że wynik będzie zawsze dodatni.
+    signal shiftedScore;
+    shiftedScore <== score[4] + (1 << 43);
 
-    component isGreaterThanZero = GreaterThan(252);
-    isGreaterThanZero.in[0] <== final_score;
-    isGreaterThanZero.in[1] <== 0;
+    // Sprawdzamy czy score >= 0  =>  czy shiftedScore >= 2^43
+    component isPositive = GreaterEqThan(44); 
+    isPositive.in[0] <== shiftedScore;
+    isPositive.in[1] <== (1 << 43);
 
-    isGreaterThanZero.out === expected_decision;
+    y <== isPositive.out;
 }
 
-component main {public [weights, bias, expected_decision]} = CreditClassifier(4);
+// -----------------------------
+// MAIN COMPONENT DECLARATION
+// -----------------------------
+// Wejścia 'x' pozostają prywatne, wyjście 'y' jest automatycznie publiczne.
+component main = CreditClassifier();
