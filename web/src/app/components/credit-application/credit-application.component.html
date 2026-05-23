@@ -1,0 +1,139 @@
+<div class="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-indigo-100">
+      
+    <!-- NAVBAR -->
+    <nav class="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur-md">
+      <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <div class="flex items-center space-x-2">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold">
+            ZK
+          </div>
+          <span class="text-xl font-bold tracking-tight text-slate-900">CreditProtocol</span>
+        </div>
+
+        <!-- Connect Wallet Button -->
+        @if (!walletAddress()) {
+          <button 
+            (click)="connectWallet()"
+            class="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            Connect Wallet
+          </button>
+        }
+        
+        @if (walletAddress()) {
+          <div class="flex items-center space-x-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 shadow-sm">
+            <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
+            <span class="text-sm font-medium text-slate-600">{{ shortenedAddress() }}</span>
+          </div>
+        }
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="mx-auto max-w-3xl px-6 py-12">
+      
+      <!-- HEADER -->
+      <div class="mb-10 text-center">
+        <h1 class="mb-3 text-4xl font-extrabold tracking-tight text-slate-900">
+          Prove your creditworthiness without <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">revealing data</span>
+        </h1>
+        <p class="text-lg text-slate-600">
+          Enter your financial details. Our Zero-Knowledge circuit will calculate your score locally in your browser and anchor only the encrypted proof on the blockchain.
+        </p>
+      </div>
+
+      <!-- PRIVACY BANNER -->
+      <div class="mb-8 flex items-start space-x-3 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-800">
+        <svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z"/>
+        </svg>
+        <div class="text-sm">
+          <p class="font-semibold">Cryptographic Security (ZK-SNARKs)</p>
+          <p class="mt-1 text-emerald-700">All values entered below never leave your device. You receive a mathematical guarantee of absolute privacy.</p>
+        </div>
+      </div>
+
+      <!-- FORM CARD -->
+      <div class="relative overflow-hidden rounded-2xl bg-white shadow-xl shadow-slate-200/50 border border-slate-100">
+        
+        <!-- Wallet Lock Overlay -->
+        @if (!walletAddress()) {
+          <div class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-2xl">
+            <p class="mb-4 font-semibold text-slate-800">Connect your wallet to start</p>
+            <button (click)="connectWallet()" class="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-slate-800">
+              Connect with MetaMask
+            </button>
+          </div>
+        }
+
+        <form [formGroup]="creditForm" (ngSubmit)="onSubmit()" class="relative p-8">
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            
+            <!-- duration -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-700">Duration (months)</label>
+              <input type="number" formControlName="duration" placeholder="e.g. 18"
+                class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-50 disabled:text-slate-500">
+            </div>
+
+            <!-- credit_amount -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-700">Credit Amount</label>
+              <input type="number" formControlName="credit_amount" placeholder="e.g. 3190"
+                class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-50 disabled:text-slate-500">
+            </div>
+
+            <!-- installment_commitment -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-700">Installment Commitment (% of disposable income)</label>
+              <input type="number" formControlName="installment_commitment" placeholder="e.g. 2"
+                class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-50 disabled:text-slate-500">
+            </div>
+
+            <!-- age -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-700">Age (years)</label>
+              <input type="number" formControlName="age" placeholder="e.g. 24"
+                class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-50 disabled:text-slate-500">
+            </div>
+
+          </div>
+
+          <!-- Submit Button -->
+          <div class="mt-8">
+            <button type="submit" [disabled]="creditForm.invalid || isProcessing()"
+              class="group relative flex w-full items-center justify-center space-x-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-300 focus:outline-none disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 disabled:transform-none disabled:shadow-none">
+              
+              @if (!isProcessing()) {
+                <span>Generate Proof & Evaluate</span>
+              }
+              @if (isProcessing()) {
+                <span>Generating ZK cryptographic proof...</span>
+              }
+              
+              <!-- Arrow with hover effect -->
+              @if (!isProcessing()) {
+                <svg class="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                </svg>
+              }
+              
+              <!-- Loader -->
+              @if (isProcessing()) {
+                <svg class="h-5 w-5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              }
+            </button>
+          </div>
+          
+        </form>
+      </div>
+
+      <!-- ERRORS -->
+      @if (error()) {
+        <p class="mt-4 text-center font-medium text-red-500">{{ error() }}</p>
+      }
+
+    </main>
+  </div>
