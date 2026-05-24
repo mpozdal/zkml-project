@@ -42,3 +42,10 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Local env (use .env.example as template)
+.env
+.env.local
+
+# Generated from .env
+/src/environments/environment.ts

@@ -79,7 +79,7 @@ npx hardhat compile
 npx hardhat ignition deploy ignition/modules/CreditZKMLModule.ts --network sepolia --reset
 ```
 
-Update `REGISTRY_ADDRESS` in `web/src/app/services/zk-credit.service.ts` with the deployed `CreditRegistry` address from the Ignition output.
+Update `NG_APP_REGISTRY_ADDRESS` in `web/.env` (copy from `web/.env.example` if needed) with the deployed `CreditRegistry` address from the Ignition output. The value is injected at build time via `web/src/environments/environment.ts` (auto-generated on `npm start` / `npm run build`).
 
 ### 4. Run the frontend
 
