@@ -1,0 +1,10 @@
+# Monorepo: Angular app lives in web/
+[build]
+  base = "web"
+  command = "npm run build"
+  publish = "dist/web/browser"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -39,26 +39,47 @@ function parseEnvFile(content) {
   return values;
 }
 
-const sourcePath = existsSync(envPath)
-  ? envPath
-  : existsSync(examplePath)
-    ? examplePath
-    : null;
+function loadEnvValues() {
+  const fromProcess = {
+    NG_APP_REGISTRY_ADDRESS: process.env.NG_APP_REGISTRY_ADDRESS,
+    NG_APP_ENV: process.env.NG_APP_ENV,
+    NODE_ENV: process.env.NODE_ENV,
+  };
 
-if (!sourcePath) {
-  console.error('Missing web/.env — copy web/.env.example to web/.env and set NG_APP_REGISTRY_ADDRESS.');
+  if (fromProcess.NG_APP_REGISTRY_ADDRESS) {
+    return fromProcess;
+  }
+
+  const sourcePath = existsSync(envPath)
+    ? envPath
+    : existsSync(examplePath)
+      ? examplePath
+      : null;
+
+  if (!sourcePath) {
+    return null;
+  }
+
+  if (!existsSync(envPath)) {
+    console.warn('web/.env not found — using web/.env.example. Copy it to .env for local overrides.');
+  }
+
+  return parseEnvFile(readFileSync(sourcePath, 'utf8'));
+}
+
+const env = loadEnvValues();
+
+if (!env) {
+  console.error(
+    'Set NG_APP_REGISTRY_ADDRESS (Netlify env var or web/.env). See web/.env.example.',
+  );
   process.exit(1);
 }
 
-if (!existsSync(envPath)) {
-  console.warn('web/.env not found — using web/.env.example. Copy it to .env for local overrides.');
-}
-
-const env = parseEnvFile(readFileSync(sourcePath, 'utf8'));
 const registryAddress = env.NG_APP_REGISTRY_ADDRESS;
 
 if (!registryAddress) {
-  console.error('NG_APP_REGISTRY_ADDRESS is required in web/.env (see web/.env.example).');
+  console.error('NG_APP_REGISTRY_ADDRESS is required (Netlify UI or web/.env).');
   process.exit(1);
 }
 

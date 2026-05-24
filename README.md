@@ -91,6 +91,20 @@ ng serve
 
 Open **http://localhost:4200/**
 
+### 5. Deploy frontend to Netlify
+
+The repo root includes `netlify.toml` (base directory `web/`, publish `dist/web/browser`).
+
+1. Connect the GitHub repo in [Netlify](https://app.netlify.com/).
+2. **Site configuration → Environment variables** — add:
+   - `NG_APP_REGISTRY_ADDRESS` = your deployed `CreditRegistry` address (same as in `web/.env.example`)
+   - optional: `NG_APP_ENV` = `production` (Netlify sets `NODE_ENV=production` during build anyway)
+3. Deploy. `npm run build` runs `prebuild` → `env:generate`, which reads Netlify env vars and bakes the address into the bundle.
+
+Local `.env` is not uploaded (gitignored). Only Netlify dashboard variables are used in CI.
+
+SPA routing (`/about`) is handled by `netlify.toml` redirects.
+
 ## Run Tests
 
 ### Frontend preprocessing (matches Python pipeline)
