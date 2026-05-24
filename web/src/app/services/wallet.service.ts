@@ -8,6 +8,7 @@ export class WalletService {
   public readonly userAddress = signal<string | null>(null);
   public readonly walletError = signal<string | null>(null);
   public readonly chainId = signal<string | null>(null);
+  public readonly isAwaitingWalletAction = signal(false);
 
   public readonly isCorrectNetwork = computed(() => {
     const id = this.chainId();
@@ -15,34 +16,38 @@ export class WalletService {
   });
 
   public async connectWallet(): Promise<void> {
-    try {
-      this.walletError.set(null);
-      await this.checkIfWalletIsConnected();
-    } catch (error: unknown) {
-      this.walletError.set(this.toErrorMessage(error));
-    }
-  }
-
-  private async checkIfWalletIsConnected(): Promise<void> {
     const ethereum = window.ethereum;
 
     if (!ethereum) {
-      throw new Error(
+      this.walletError.set(
         'MetaMask was not detected. Install the extension from https://metamask.io and refresh the page.',
       );
+      return;
     }
 
-    const provider = new ethers.BrowserProvider(ethereum);
-    const accounts = await provider.send('eth_requestAccounts', []);
+    try {
+      this.walletError.set(null);
+      this.isAwaitingWalletAction.set(true);
 
-    if (accounts.length > 0) {
-      this.userAddress.set(accounts[0]);
+      // Keep the provider request as close to the click handler as possible.
+      await ethereum.request({ method: 'eth_requestAccounts' });
+
+      const provider = new ethers.BrowserProvider(ethereum);
+      const accounts = await provider.listAccounts();
+
+      if (accounts.length > 0) {
+        this.userAddress.set(accounts[0].address);
+      }
+
+      const network = await provider.getNetwork();
+      this.applyChainId(ethers.toBeHex(network.chainId));
+
+      this.setupEventListeners();
+    } catch (error: unknown) {
+      this.walletError.set(this.toErrorMessage(error));
+    } finally {
+      this.isAwaitingWalletAction.set(false);
     }
-
-    const chainId = await provider.send('eth_chainId', []);
-    this.applyChainId(chainId);
-
-    this.setupEventListeners();
   }
 
   private listenersAttached = false;

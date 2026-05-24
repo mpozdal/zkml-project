@@ -19,6 +19,7 @@
     "@angular/router": "^21.2.0",
     "ethers": "^6.16.0",
     "rxjs": "~7.8.0",
+    "snarkjs": "^0.7.6",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
