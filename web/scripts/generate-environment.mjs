@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -95,5 +95,6 @@ export const environment = {
 };
 `;
 
+mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, output);
 console.log(`Wrote ${outPath}`);
