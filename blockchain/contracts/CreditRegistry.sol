@@ -9,7 +9,7 @@ interface IVerifier {
         uint[2] calldata proofA,
         uint[2][2] calldata proofB,
         uint[2] calldata proofC,
-        uint[3] calldata publicSignals
+        uint[1] calldata publicSignals
     ) external view returns (bool);
 }
 
@@ -20,18 +20,15 @@ contract CreditRegistry is Ownable, Pausable {
         bool isApproved;
         uint256 timestamp;
         bool exists;
-        bytes32 modelHash;
-        bytes32 inputHash;
     }
 
-    mapping(address => mapping(bytes32 => CreditApplication))
-        public applications;
+    mapping(address => mapping(uint256 => CreditApplication))
+        public userApplications;
 
     event CreditAnchored(
         address indexed user,
-        bytes32 indexed applicationId,
-        bool isApproved,
-        bytes32 modelHash
+        uint256 indexed applicationId,
+        bool isApproved
     );
 
     constructor(address _verifier) Ownable(msg.sender) {
@@ -47,34 +44,30 @@ contract CreditRegistry is Ownable, Pausable {
     }
 
     function anchorCreditDecision(
-        bytes32 applicationId,
+        uint256 applicationId,
         uint[2] calldata proofA,
         uint[2][2] calldata proofB,
         uint[2] calldata proofC,
-        uint[3] calldata publicSignals
+        uint[1] calldata publicSignals
     ) external whenNotPaused {
         require(
-            !applications[msg.sender][applicationId].exists,
-            "Duplicate application"
+            !userApplications[msg.sender][applicationId].exists,
+            "Application ID already used."
         );
 
         require(
             verifier.verifyProof(proofA, proofB, proofC, publicSignals),
-            "Invalid proof"
+            "Invalid ZK proof."
         );
 
-        bytes32 modelHash = bytes32(publicSignals[0]);
-        bytes32 inputHash = bytes32(publicSignals[1]);
-        bool isApproved = publicSignals[2] == 1;
+        bool isApproved = publicSignals[0] == 1;
 
-        applications[msg.sender][applicationId] = CreditApplication({
+        userApplications[msg.sender][applicationId] = CreditApplication({
             isApproved: isApproved,
             timestamp: block.timestamp,
-            exists: true,
-            modelHash: modelHash,
-            inputHash: inputHash
+            exists: true
         });
 
-        emit CreditAnchored(msg.sender, applicationId, isApproved, modelHash);
+        emit CreditAnchored(msg.sender, applicationId, isApproved);
     }
 }

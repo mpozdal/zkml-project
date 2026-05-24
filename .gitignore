@@ -28,11 +28,13 @@ blockchain/typechain-types/
 blockchain/coverage/
 blockchain/coverage.json
 blockchain/gas-report.txt
+blockchain/ignition/deployments/**/build-info/
+blockchain/ignition/deployments/chain-31337/
 
-frontend/node_modules/
-frontend/dist/
-frontend/.angular/
-frontend/coverage/
+web/node_modules/
+web/dist/
+web/.angular/
+web/coverage/
 
 node_modules/
 npm-debug.log
