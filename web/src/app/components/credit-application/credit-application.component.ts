@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { WalletService } from '../../services/wallet.service';
 import { ModelPreprocessingService } from '../../services/model-preprocessing.service';
 import { GeneratedCreditProof, ZkCreditService } from '../../services/zk-credit.service';
+import { SiteHeaderComponent } from '../site-header/site-header.component';
 
 type SubmissionResult =
   | {
@@ -25,7 +26,7 @@ type PendingAnchor = GeneratedCreditProof & {
   selector: 'app-credit-application.component',
   templateUrl: './credit-application.component.html',
   styleUrl: './credit-application.component.css',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, SiteHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreditApplicationComponent {
@@ -50,11 +51,6 @@ export class CreditApplicationComponent {
   protected readonly isProcessing = computed(
     () => this.isGeneratingProof() || this.isSigning(),
   );
-
-  protected readonly shortenedAddress = computed(() => {
-    const addr = this.walletAddress();
-    return addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '';
-  });
 
   creditForm: FormGroup = this.fb.group({
     duration: ['', [Validators.required, Validators.min(0)]],

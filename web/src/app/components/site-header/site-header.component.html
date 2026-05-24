@@ -1,0 +1,56 @@
+<nav class="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur-md">
+  <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+    <a routerLink="/" class="flex items-center space-x-2">
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+        ZK
+      </div>
+      <span class="text-xl font-bold tracking-tight text-slate-900">CreditProtocol</span>
+    </a>
+
+    <div class="flex items-center gap-8">
+      <div class="flex items-center gap-6">
+        <a
+          routerLink="/"
+          routerLinkActive="text-indigo-600"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="text-sm font-medium text-slate-600 transition-colors hover:text-indigo-600">
+          Apply
+        </a>
+        <a
+          routerLink="/about"
+          routerLinkActive="text-indigo-600"
+          class="text-sm font-medium text-slate-600 transition-colors hover:text-indigo-600">
+          About
+        </a>
+      </div>
+
+      <button
+        type="button"
+        (click)="connectWallet()"
+        [disabled]="isAwaitingWalletAction() || !!walletAddress()"
+        class="flex h-9 w-[10.25rem] shrink-0 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-default"
+        [class.cursor-pointer]="!walletAddress()"
+        [class.cursor-wait]="isAwaitingWalletAction() && !walletAddress()"
+        [class.opacity-80]="isAwaitingWalletAction() && !walletAddress()"
+        [class.bg-indigo-600]="!walletAddress()"
+        [class.text-white]="!walletAddress()"
+        [class.hover:bg-indigo-700]="!walletAddress()"
+        [class.hover:shadow-md]="!walletAddress()"
+        [class.hover:shadow-indigo-200]="!walletAddress()"
+        [class.border]="!!walletAddress()"
+        [class.border-slate-200]="!!walletAddress()"
+        [class.bg-white]="!!walletAddress()"
+        [class.text-slate-600]="!!walletAddress()"
+        [class.shadow-sm]="!!walletAddress()">
+        @if (walletAddress()) {
+          <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+          <span class="truncate">{{ shortenedAddress() }}</span>
+        } @else if (isAwaitingWalletAction()) {
+          <span class="truncate">Connecting…</span>
+        } @else {
+          Connect Wallet
+        }
+      </button>
+    </div>
+  </div>
+</nav>

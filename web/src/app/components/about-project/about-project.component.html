@@ -1,0 +1,147 @@
+<div class="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-indigo-100">
+  <app-site-header />
+
+  <main class="mx-auto max-w-3xl px-6 py-12">
+    <header class="mb-12">
+      <p class="mb-2 text-sm font-semibold uppercase tracking-wider text-indigo-600">Master's thesis project</p>
+      <h1 class="mb-4 text-4xl font-extrabold tracking-tight text-slate-900">About this project</h1>
+      <p class="text-lg leading-relaxed text-slate-600">
+        ZKML Credit Classifier demonstrates
+        <strong class="font-semibold text-slate-800">Zero-Knowledge Machine Learning (ZKML)</strong>
+        in consumer credit scoring. A logistic regression model evaluates creditworthiness while sensitive
+        financial inputs stay on the client. Only a Groth16 proof and the public decision bit are sent to
+        Ethereum (Sepolia).
+      </p>
+    </header>
+
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-slate-900">What it does</h2>
+      <ul class="space-y-3 text-slate-600">
+        <li class="flex gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500"></span>
+          <span>You enter four features from the German Credit dataset schema (duration, amount, installment commitment, age).</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500"></span>
+          <span>The browser applies the same StandardScaler and fixed-point encoding (<code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-800">SCALE = 1000</code>) as the Python training pipeline.</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500"></span>
+          <span>SnarkJS generates a ZK-SNARK proof locally (WebAssembly) that the Circom circuit computed the model output correctly.</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500"></span>
+          <span>MetaMask submits the proof to <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-800">CreditRegistry</code>, which verifies it on-chain and stores only <em>approved / denied</em> plus a timestamp.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="mb-4 text-2xl font-bold text-slate-900">System architecture</h2>
+      <p class="mb-6 text-slate-600">The repository is split into four modules:</p>
+      <dl class="space-y-5">
+        <div>
+          <dt class="font-semibold text-slate-900"><code class="text-indigo-700">ml-model/</code> — Python, scikit-learn</dt>
+          <dd class="mt-1 text-slate-600">Trains logistic regression on German Credit data; exports quantized weights, scaler parameters, and <code class="rounded bg-slate-100 px-1 text-sm">model_config.json</code>.</dd>
+        </div>
+        <div>
+          <dt class="font-semibold text-slate-900"><code class="text-indigo-700">zero-knowledge/</code> — Circom, SnarkJS</dt>
+          <dd class="mt-1 text-slate-600">Circuit replicates fixed-point inference (dot product with <code class="rounded bg-slate-100 px-1 text-sm">// SCALE</code>); builds <code class="rounded bg-slate-100 px-1 text-sm">credit_classifier.wasm</code> and Groth16 proving keys.</dd>
+        </div>
+        <div>
+          <dt class="font-semibold text-slate-900"><code class="text-indigo-700">blockchain/</code> — Solidity, Hardhat Ignition</dt>
+          <dd class="mt-1 text-slate-600"><code class="rounded bg-slate-100 px-1 text-sm">Groth16Verifier.sol</code> checks proofs; <code class="rounded bg-slate-100 px-1 text-sm">CreditRegistry.sol</code> anchors decisions per wallet and application ID.</dd>
+        </div>
+        <div>
+          <dt class="font-semibold text-slate-900"><code class="text-indigo-700">web/</code> — Angular, Tailwind, ethers.js</dt>
+          <dd class="mt-1 text-slate-600">SPA for wallet connection, preprocessing, in-browser proof generation, and Sepolia transactions.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-slate-900">Data flow</h2>
+      <pre class="overflow-x-auto rounded-xl border border-slate-200 bg-slate-900 p-5 text-sm leading-relaxed text-slate-100"><code>Form (raw features)
+  → StandardScaler + SCALE=1000 (model_config.json)
+  → Unsigned 32-bit encoding (two's complement for Circom Num2Bits)
+  → Circom private inputs x[4]
+  → Groth16 proof + public signal y (0 or 1)
+  → CreditRegistry.anchorCreditDecision()
+  → On-chain: isApproved, timestamp, applicationId</code></pre>
+      <p class="mt-4 text-sm text-slate-600">
+        Raw form values are never sent as plain calldata. The chain sees the proof, the public decision, and registry metadata—not your inputs or model weights.
+      </p>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-slate-900">Privacy &amp; security</h2>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+          <h3 class="mb-2 font-semibold text-emerald-900">Verify, don't trust</h3>
+          <p class="text-sm text-emerald-800">The verifier checks the Groth16 proof against the deployed circuit—no server-side scoring.</p>
+        </div>
+        <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+          <h3 class="mb-2 font-semibold text-indigo-900">Private witness</h3>
+          <p class="text-sm text-indigo-800"><code class="text-xs">x[4]</code> are private Circom inputs; only public output <code class="text-xs">y</code> is revealed in the proof.</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4 sm:col-span-2">
+          <h3 class="mb-2 font-semibold text-slate-900">Pipeline parity</h3>
+          <p class="text-sm text-slate-600">Angular preprocessing matches <code class="rounded bg-slate-100 px-1 text-sm">ml-model/train.py</code> (same scaler, weights, fixed-point division). Unit tests assert the documented example row produces decision <code class="rounded bg-slate-100 px-1 text-sm">1</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-10">
+      <h2 class="mb-4 text-2xl font-bold text-slate-900">On-chain storage</h2>
+      <p class="mb-4 text-slate-600">Per <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">(userAddress, applicationId)</code> the registry stores:</p>
+      <ul class="list-inside list-disc space-y-1 text-slate-600">
+        <li><code class="text-sm">isApproved</code> — model decision (0 or 1)</li>
+        <li><code class="text-sm">timestamp</code> — block time</li>
+        <li><code class="text-sm">exists</code> — replay protection</li>
+      </ul>
+      <p class="mt-4 text-sm text-slate-500">Proofs, raw features, and weights are not persisted on-chain.</p>
+    </section>
+
+    <section class="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="mb-4 text-2xl font-bold text-slate-900">Example test case</h2>
+      <p class="mb-4 text-slate-600">Values from <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">model_config.json</code> (<code class="text-sm">exampleRaw</code>):</p>
+      <table class="mb-4 w-full text-left text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-slate-500">
+            <th class="pb-2 font-medium">Field</th>
+            <th class="pb-2 font-medium">Value</th>
+          </tr>
+        </thead>
+        <tbody class="text-slate-800">
+          <tr class="border-b border-slate-100"><td class="py-2">Duration (months)</td><td class="py-2">18</td></tr>
+          <tr class="border-b border-slate-100"><td class="py-2">Credit amount</td><td class="py-2">3190</td></tr>
+          <tr class="border-b border-slate-100"><td class="py-2">Installment commitment</td><td class="py-2">2</td></tr>
+          <tr><td class="py-2">Age</td><td class="py-2">24</td></tr>
+        </tbody>
+      </table>
+      <p class="text-sm font-medium text-emerald-700">Expected result: credit approved.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="mb-4 text-2xl font-bold text-slate-900">Repository layout</h2>
+      <pre class="overflow-x-auto rounded-xl border border-slate-200 bg-slate-100 p-5 text-sm text-slate-800"><code>zkml-credit-project/
+├── ml-model/           # Training + model_config.json
+├── zero-knowledge/     # Circom circuit + keys
+├── blockchain/         # Solidity + Hardhat Ignition
+└── web/                # Angular frontend
+    └── public/
+        ├── model_config.json
+        ├── credit_classifier.wasm
+        └── credit_classifier_0001.zkey</code></pre>
+    </section>
+
+    <div class="flex flex-col items-center gap-4 border-t border-slate-200 pt-10 sm:flex-row sm:justify-between">
+      <p class="text-sm text-slate-500">Full setup and developer docs are in the root <code class="rounded bg-slate-100 px-1">README.md</code>.</p>
+      <a
+        routerLink="/"
+        class="cursor-pointer rounded-full bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-indigo-700">
+        Go to application
+      </a>
+    </div>
+  </main>
+</div>

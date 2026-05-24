@@ -1,36 +1,6 @@
 <div class="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-indigo-100">
       
-    <!-- NAVBAR -->
-    <nav class="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-      <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <div class="flex items-center space-x-2">
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold">
-            ZK
-          </div>
-          <span class="text-xl font-bold tracking-tight text-slate-900">CreditProtocol</span>
-        </div>
-
-        @if (!walletAddress()) {
-          <button 
-            (click)="connectWallet()"
-            [disabled]="isAwaitingWalletAction()"
-            class="rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-80">
-            @if (isAwaitingWalletAction()) {
-              Waiting for MetaMask...
-            } @else {
-              Connect Wallet
-            }
-          </button>
-        }
-        
-        @if (walletAddress()) {
-          <div class="flex items-center space-x-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 shadow-sm">
-            <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
-            <span class="text-sm font-medium text-slate-600">{{ shortenedAddress() }}</span>
-          </div>
-        }
-      </div>
-    </nav>
+    <app-site-header />
 
     <main class="mx-auto max-w-3xl px-6 py-12">
       
@@ -58,7 +28,7 @@
         @if (!walletAddress()) {
           <div class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-2xl">
             <p class="mb-4 font-semibold text-slate-800">Connect your wallet to start</p>
-            <button (click)="connectWallet()" [disabled]="isAwaitingWalletAction()" class="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-slate-800 disabled:cursor-wait disabled:opacity-80">
+            <button (click)="connectWallet()" [disabled]="isAwaitingWalletAction()" class="cursor-pointer rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-slate-800 disabled:cursor-wait disabled:opacity-80">
               @if (isAwaitingWalletAction()) {
                 Waiting for MetaMask...
               } @else {
@@ -104,7 +74,7 @@
 
           <div class="mt-8">
             <button type="submit" [disabled]="creditForm.invalid || isGeneratingProof()"
-              class="group relative flex w-full items-center justify-center space-x-2 rounded-xl bg-linear-to-r from-indigo-600 to-blue-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-300 focus:outline-none disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 disabled:transform-none disabled:shadow-none">
+              class="group relative flex w-full cursor-pointer items-center justify-center space-x-2 rounded-xl bg-linear-to-r from-indigo-600 to-blue-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-300 focus:outline-none disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 disabled:transform-none disabled:shadow-none">
               
               @if (!isGeneratingProof()) {
                 <span>Generate Proof & Evaluate</span>
@@ -145,7 +115,7 @@
         aria-labelledby="sign-modal-title">
         <button
           type="button"
-          class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+          class="absolute inset-0 cursor-pointer bg-slate-900/50 backdrop-blur-sm"
           aria-label="Close dialog"
           (click)="closeSignModal()">
         </button>
@@ -197,7 +167,7 @@
               type="button"
               (click)="confirmAnchor()"
               [disabled]="isSigning()"
-              class="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-80">
+              class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-80">
               @if (isSigning()) {
                 <svg class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -213,7 +183,7 @@
               type="button"
               (click)="closeSignModal()"
               [disabled]="isSigning()"
-              class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+              class="w-full cursor-pointer rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
               Cancel
             </button>
           </div>
@@ -229,7 +199,7 @@
         aria-labelledby="result-modal-title">
         <button
           type="button"
-          class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+          class="absolute inset-0 cursor-pointer bg-slate-900/50 backdrop-blur-sm"
           aria-label="Close dialog"
           (click)="closeResultModal()">
         </button>
@@ -318,7 +288,7 @@
               <button
                 type="button"
                 (click)="closeResultModal()"
-                class="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800">
+                class="w-full cursor-pointer rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800">
                 Close
               </button>
             </div>
@@ -344,7 +314,7 @@
               <button
                 type="button"
                 (click)="closeResultModal()"
-                class="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800">
+                class="w-full cursor-pointer rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800">
                 Close
               </button>
             </div>
