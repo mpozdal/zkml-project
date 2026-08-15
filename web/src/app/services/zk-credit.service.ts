@@ -7,6 +7,7 @@ import {
   REGISTRY_ABI,
 } from '../config/zk-credit.constants';
 import { REGISTRY_ADDRESS } from '../../environments/environment';
+import { applicationIdOnChain, hashProofForAudit } from '../utils/credit-audit';
 
 export type FormattedProof = {
   proofA: [string, string];
@@ -17,6 +18,13 @@ export type FormattedProof = {
 export type GeneratedCreditProof = {
   formattedProof: FormattedProof;
   publicSignals: string[];
+};
+
+export type AnchorCreditResult = {
+  txHash: string;
+  blockNumber: number;
+  proofHash: string;
+  applicationId: string;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -34,7 +42,7 @@ export class ZkCreditService {
     rawApplicationId: string,
     formattedProof: FormattedProof,
     publicSignals: string[],
-  ) {
+  ): Promise<AnchorCreditResult> {
     return this.submitToBlockchain(rawApplicationId, formattedProof, publicSignals);
   }
 
@@ -70,7 +78,7 @@ export class ZkCreditService {
     rawAppId: string,
     formattedProof: FormattedProof,
     publicSignals: string[],
-  ) {
+  ): Promise<AnchorCreditResult> {
     const ethereum = window.ethereum;
 
     if (!ethereum) {
@@ -81,11 +89,12 @@ export class ZkCreditService {
       throw new Error(`Expected 1 public signal from circuit, got ${publicSignals.length}.`);
     }
 
+    const proofHash = hashProofForAudit(formattedProof, publicSignals);
+    const applicationId = applicationIdOnChain(rawAppId);
+
     const provider = new ethers.BrowserProvider(ethereum);
     const signer = await provider.getSigner();
     const contract = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, signer);
-
-    const applicationId = BigInt(ethers.id(rawAppId));
 
     try {
       const tx = await contract['anchorCreditDecision'](
@@ -96,7 +105,18 @@ export class ZkCreditService {
         publicSignals,
       );
 
-      return await tx.wait();
+      const receipt = await tx.wait();
+
+      if (!receipt) {
+        throw new Error('Transaction receipt was not returned.');
+      }
+
+      return {
+        txHash: receipt.hash,
+        blockNumber: Number(receipt.blockNumber),
+        proofHash,
+        applicationId: applicationId.toString(),
+      };
     } catch (error: unknown) {
       console.error('Blockchain transaction failed:', error);
       if (this.isRejectedTransaction(error)) {

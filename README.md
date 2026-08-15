@@ -135,9 +135,12 @@ Per `(userAddress, applicationId)` the registry stores:
 
 - `isApproved` — model decision (0 or 1)
 - `timestamp` — block time
+- `proofHash` — `keccak256(abi.encode(proofA, proofB, proofC, publicSignals))` — audit anchor linking this exact proof and decision
 - `exists` — replay protection flag
 
-The contract does **not** persist raw features, the ZK proof, or model weights. Private inputs remain in the browser.
+The contract also tracks `usedProofHashes` so the same proof cannot be anchored twice.
+
+The full ZK proof is not stored in contract storage (it remains in transaction calldata). Raw features and model weights are never persisted on-chain.
 
 ## Security & Privacy
 

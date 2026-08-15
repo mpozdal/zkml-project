@@ -283,7 +283,30 @@
                   <dt class="font-medium text-slate-500">Block</dt>
                   <dd class="font-mono font-semibold text-slate-800">#{{ result.blockNumber }}</dd>
                 </div>
+                <div class="flex flex-col gap-1">
+                  <dt class="font-medium text-slate-500">Application ID (on-chain)</dt>
+                  <dd class="break-all font-mono text-xs text-slate-800">{{ result.applicationId }}</dd>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <dt class="font-medium text-slate-500">Proof hash (audit anchor)</dt>
+                  <dd class="break-all font-mono text-xs text-slate-800" [title]="result.proofHash">
+                    {{ result.proofHash }}
+                  </dd>
+                </div>
               </dl>
+
+              <p class="text-xs leading-relaxed text-slate-500">
+                The proof hash links this exact ZK proof and public decision to your wallet and application ID in
+                <a
+                  [href]="explorerContractUrl()"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-medium text-indigo-600 hover:underline">
+                  CreditRegistry
+                </a>.
+                Verify later via Etherscan → Read Contract → <code class="text-xs">userApplications</code> or filter
+                event <code class="text-xs">CreditAnchored</code> by this proof hash.
+              </p>
 
               <button
                 type="button"

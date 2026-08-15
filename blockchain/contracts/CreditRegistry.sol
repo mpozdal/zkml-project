@@ -20,14 +20,18 @@ contract CreditRegistry is Ownable, Pausable {
         bool isApproved;
         uint256 timestamp;
         bool exists;
+        bytes32 proofHash;
     }
 
     mapping(address => mapping(uint256 => CreditApplication))
         public userApplications;
 
+    mapping(bytes32 => bool) public usedProofHashes;
+
     event CreditAnchored(
         address indexed user,
         uint256 indexed applicationId,
+        bytes32 indexed proofHash,
         bool isApproved
     );
 
@@ -60,14 +64,23 @@ contract CreditRegistry is Ownable, Pausable {
             "Invalid ZK proof."
         );
 
+        bytes32 proofHash = keccak256(
+            abi.encode(proofA, proofB, proofC, publicSignals)
+        );
+
+        require(!usedProofHashes[proofHash], "Proof already anchored.");
+
         bool isApproved = publicSignals[0] == 1;
 
         userApplications[msg.sender][applicationId] = CreditApplication({
             isApproved: isApproved,
             timestamp: block.timestamp,
-            exists: true
+            exists: true,
+            proofHash: proofHash
         });
 
-        emit CreditAnchored(msg.sender, applicationId, isApproved);
+        usedProofHashes[proofHash] = true;
+
+        emit CreditAnchored(msg.sender, applicationId, proofHash, isApproved);
     }
 }

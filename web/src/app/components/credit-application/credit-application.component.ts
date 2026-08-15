@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { WalletService } from '../../services/wallet.service';
 import { ModelPreprocessingService } from '../../services/model-preprocessing.service';
 import { GeneratedCreditProof, ZkCreditService } from '../../services/zk-credit.service';
+import { REGISTRY_ADDRESS } from '../../../environments/environment';
 import { SiteHeaderComponent } from '../site-header/site-header.component';
 
 type SubmissionResult =
@@ -11,6 +12,8 @@ type SubmissionResult =
       isApproved: boolean;
       txHash: string;
       blockNumber: number;
+      proofHash: string;
+      applicationId: string;
     }
   | {
       type: 'error';
@@ -80,6 +83,10 @@ export class CreditApplicationComponent {
     return `${txHash.slice(0, 10)}...${txHash.slice(-8)}`;
   }
 
+  protected explorerContractUrl(): string {
+    return `https://sepolia.etherscan.io/address/${REGISTRY_ADDRESS}`;
+  }
+
   protected async onSubmit() {
     if (this.creditForm.invalid || !this.walletAddress() || this.isProcessing()) return;
 
@@ -124,7 +131,7 @@ export class CreditApplicationComponent {
     this.isSigning.set(true);
 
     try {
-      const receipt = await this.zkCreditService.anchorCreditOnChain(
+      const result = await this.zkCreditService.anchorCreditOnChain(
         pending.applicationId,
         pending.formattedProof,
         pending.publicSignals,
@@ -135,8 +142,10 @@ export class CreditApplicationComponent {
       this.submissionResult.set({
         type: 'success',
         isApproved: pending.isApproved,
-        txHash: receipt.hash,
-        blockNumber: Number(receipt.blockNumber),
+        txHash: result.txHash,
+        blockNumber: result.blockNumber,
+        proofHash: result.proofHash,
+        applicationId: result.applicationId,
       });
       this.showResultModal.set(true);
     } catch (err) {

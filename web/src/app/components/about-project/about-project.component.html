@@ -97,9 +97,15 @@
       <ul class="list-inside list-disc space-y-1 text-slate-600">
         <li><code class="text-sm">isApproved</code> — model decision (0 or 1)</li>
         <li><code class="text-sm">timestamp</code> — block time</li>
+        <li><code class="text-sm">proofHash</code> — fingerprint of the verified proof + public signal (audit anchor)</li>
         <li><code class="text-sm">exists</code> — replay protection</li>
       </ul>
-      <p class="mt-4 text-sm text-slate-500">Proofs, raw features, and weights are not persisted on-chain.</p>
+      <p class="mt-4 text-sm text-slate-500">
+        After anchoring, the UI shows the proof hash and application ID. On Etherscan, use
+        <code class="text-xs">userApplications(wallet, applicationId)</code> or filter
+        <code class="text-xs">CreditAnchored</code> by proof hash to verify that a given proof received a specific decision.
+        The full proof stays in transaction calldata; raw features are never stored on-chain.
+      </p>
     </section>
 
     <section class="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
