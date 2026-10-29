@@ -1,7 +1,7 @@
 import { defineConfig } from 'hardhat/config';
-
 import hardhatIgnitionPlugin from '@nomicfoundation/hardhat-ignition';
 import hardhatIgnitionViemPlugin from '@nomicfoundation/hardhat-ignition-viem';
+import hardhatMochaPlugin from '@nomicfoundation/hardhat-mocha';
 import hardhatVerifyPlugin from '@nomicfoundation/hardhat-verify';
 import hardhatViemPlugin from '@nomicfoundation/hardhat-viem';
 
@@ -11,6 +11,7 @@ export default defineConfig({
 	plugins: [
 		hardhatIgnitionPlugin,
 		hardhatIgnitionViemPlugin,
+		hardhatMochaPlugin,
 		hardhatVerifyPlugin,
 		hardhatViemPlugin,
 	],
@@ -26,8 +27,8 @@ export default defineConfig({
 	networks: {
 		sepolia: {
 			type: 'http',
-			url: process.env.SEPOLIA_URL,
-			accounts: [process.env.PRIVATE_KEY],
+			url: process.env.SEPOLIA_URL ?? '',
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 	},
 });

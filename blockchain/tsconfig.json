@@ -3,8 +3,9 @@
     "lib": ["es2023"],
     "module": "node20",
     "target": "es2023",
+    "strict": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "types": ["node"]
+    "types": ["node", "mocha"]
   }
 }
