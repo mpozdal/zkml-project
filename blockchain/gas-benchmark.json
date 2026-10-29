@@ -1,0 +1,19 @@
+{
+  "measurements": {
+    "Groth16, decyzja odmowna (y = 0)": 314837,
+    "Groth16, decyzja pozytywna (y = 1)": 334761,
+    "makieta, decyzja odmowna (y = 0)": 128540,
+    "makieta, decyzja pozytywna (y = 1)": 148464,
+    "bezposredni rachunek, n =  4 cech": 118989,
+    "bezposredni rachunek, n =  8 cech": 124373,
+    "bezposredni rachunek, n = 16 cech": 135142,
+    "bezposredni rachunek, n = 32 cech": 156680,
+    "bezposredni rachunek, n = 64 cech": 199760
+  },
+  "plainCostModel": {
+    "gasPerFeature": 1346,
+    "fixedCost": 113603
+  },
+  "breakEvenFeatureCount": 165,
+  "note": "Pomiar w emulatorze Hardhat. Koszt wariantu bezposredniego zawiera takze koszt danych wywolania rosnacy z liczba cech oraz skrot wejscia jako kotwice audytowa."
+}

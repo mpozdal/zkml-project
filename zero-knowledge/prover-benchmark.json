@@ -1,0 +1,28 @@
+{
+  "runs": 20,
+  "warmupMs": 301.4,
+  "proveMs": {
+    "min": 36.8,
+    "median": 39,
+    "mean": 40,
+    "max": 49.6
+  },
+  "verifyLocalMs": {
+    "min": 12.6,
+    "median": 13.2,
+    "mean": 13.5,
+    "max": 16.5
+  },
+  "artifactSizesBytes": {
+    "wasm": 42295,
+    "zkey": 118171,
+    "verificationKey": 2924
+  },
+  "peakHeapUsedBytes": 9955880,
+  "rssBytes": 203636736,
+  "publicSignals": [
+    "1"
+  ],
+  "proofSizeBytes": 721,
+  "runtime": "node v26.0.0"
+}
