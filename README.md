@@ -1,76 +1,108 @@
 # ZKML Credit Classifier
 
-A master's thesis project demonstrating **Zero-Knowledge Machine Learning (ZKML)** in the financial sector. The system verifies a client's creditworthiness using a logistic regression model **without revealing sensitive financial data** on the blockchain or to external servers.
+Master's thesis prototype: **Zero-Knowledge Machine Learning (ZKML)** for consumer credit scoring.
 
-ZK-SNARK proof generation runs locally in the browser (WebAssembly via SnarkJS). The smart contract on Sepolia only verifies the proof and anchors the final decision.
+A logistic regression model assesses creditworthiness **without putting raw financial features on-chain**. The applicant computes the decision and a Groth16 proof in the browser; a smart contract on Ethereum Sepolia only verifies the proof and anchors the public outcome.
 
-## System Architecture
+**Live demo:** [credit-protocol.netlify.app](https://credit-protocol.netlify.app)  
+**Repository:** [github.com/mpozdal/zkml-project](https://github.com/mpozdal/zkml-project)
 
-The project is divided into 4 modules:
+## What this project shows
 
-1. **`ml-model/` (Python, scikit-learn)**
-   - Trains a classifier on the German Credit dataset.
-   - Exports quantized weights, scaler parameters, and `model_config.json`.
+| Goal | How |
+| --- | --- |
+| Private inputs | Features stay in the browser as Circom private witnesses `x[4]`; only public bit `y` (approve / deny) is revealed |
+| Bound model | Weights, bias and `SCALE` are **circuit constants**, not witness inputs — changing the model requires a new verifier |
+| On-chain anchor | `CreditRegistry` verifies Groth16, stores decision + `proofHash`, blocks proof replay |
+| Measurable claims | Attack suite (H1), gas vs direct on-chain scoring (H2), replay resistance (H3), prover timing |
 
-2. **`zero-knowledge/` (Circom, SnarkJS)**
-   - Circom circuit replicating fixed-point model inference.
-   - Builds `credit_classifier.wasm` and proving keys (Groth16).
+This is a research prototype on the public **German Credit** dataset (4 features). It does **not** attest that form values are true bank data, and StandardScaler runs in the client **outside** the circuit.
 
-3. **`blockchain/` (Solidity, Hardhat Ignition)**
-   - `Groth16Verifier.sol` — on-chain proof verifier.
-   - `CreditRegistry.sol` — verifies proof and stores `(isApproved, timestamp)` per user and application ID.
+## System architecture
 
-4. **`web/` (Angular 21, Tailwind CSS, ethers.js)**
-   - SPA with wallet connection (MetaMask).
-   - Loads `model_config.json`, preprocesses form inputs (StandardScaler + fixed-point), generates proof in-browser, anchors decision on Sepolia.
+```
+ml-model/          Train logistic regression → model_config.json (scaler, quantized weights)
+zero-knowledge/    Circom circuit + Groth16 keys + attack / prover benchmarks
+blockchain/        Groth16Verifier + CreditRegistry (Sepolia) + Hardhat tests
+web/               Angular SPA: preprocess → snarkjs.fullProve → MetaMask anchor
+```
 
-## Data Flow
+1. **`ml-model/`** (Python, scikit-learn) — German Credit, 4 features (`duration`, `credit_amount`, `installment_commitment`, `age`), fixed-point export (`SCALE = 1000`), optional `evaluate.py` report.
+2. **`zero-knowledge/`** (Circom, SnarkJS) — hand-written circuit matching fixed-point inference; `credit_classifier.wasm` + proving key; hardened `credit_classifier_v2.circom`; attack artifacts under `attack/` and `attack-witness/`.
+3. **`blockchain/`** (Solidity, Hardhat Ignition) — on-chain verifier + registry with `proofHash` / `usedProofHashes`; gas benchmark vs `PlainScoring`; attack tests.
+4. **`web/`** (Angular, Tailwind, ethers.js, SnarkJS) — wallet, preprocessing, in-browser proving, Sepolia submit.
+
+## End-to-end data flow
 
 ```
 Form (raw features)
-  → StandardScaler + SCALE=1000 (model_config.json)
-  → Circom private inputs x[4]
-  → Groth16 proof + public signal y (0/1)
+  → StandardScaler + trunc(z × 1000)          [client JS, model_config.json]
+  → unsigned 32-bit (two's complement)       [for Circom Num2Bits(32)]
+  → private inputs x[4]
+  → Groth16 proof + public y ∈ {0,1}         [snarkjs in browser]
   → CreditRegistry.anchorCreditDecision()
-  → On-chain: isApproved, timestamp, applicationId
+  → on-chain: isApproved, timestamp, proofHash, applicationId
 ```
 
-Raw form values (`duration`, `credit_amount`, etc.) never leave the browser as plain calldata. Only the ZK proof and public decision bit are sent in the transaction.
+Raw features never appear as plain calldata. Model weights are not stored on-chain; they are compiled into the circuit / verifier key.
 
-Fixed-point features are encoded as **unsigned 32-bit integers** (two's complement) before being passed to the Circom circuit, because `Num2Bits(32)` requires non-negative field elements.
+## What is stored on-chain
+
+Per `(userAddress, applicationId)`:
+
+| Field | Meaning |
+| --- | --- |
+| `isApproved` | Model decision from `publicSignals[0]` |
+| `timestamp` | Block time |
+| `proofHash` | `keccak256(abi.encode(proofA, proofB, proofC, publicSignals))` — audit link |
+| `exists` | Application ID already used for this wallet |
+
+`usedProofHashes` prevents anchoring the same proof twice (from another account or ID). The full proof remains in transaction calldata.
+
+## Security model (short)
+
+- **Protected:** forging a decision that does not match the **deployed** circuit/weights; reading private `x` from the chain; reusing a captured proof after it was anchored.
+- **Not protected by ZK alone:** lying about raw form values; swapping client preprocessing; deploying a **new** verifier+registry with different weights; front-running an unconfirmed proof in the mempool; linking wallet address ↔ credit decision.
+
+Attack experiments and hypothesis checks live in:
+
+- `blockchain/test/WeightSubstitutionAttack.test.ts`
+- `blockchain/test/WitnessForgeryAttack.test.ts`
+- `blockchain/test/ReplayAttack.test.ts`
+- `blockchain/test/GasBenchmark.test.ts`
+- `zero-knowledge/attack/`, `zero-knowledge/attack-witness/`
 
 ## Prerequisites
 
-- **Node.js** 18+
-- **Python 3** (for model training)
-- **MetaMask** with Sepolia ETH
-- **npm**
+- Node.js 22+ (required by Hardhat 3)
+- Python 3 (optional retraining / evaluation)
+- MetaMask + Sepolia ETH
+- Circom 2.x / SnarkJS toolchain (optional circuit rebuild)
 
 ## Setup
 
-### 1. Train the model (optional — artifacts already included)
+### 1. Train the model (optional — artifacts included)
 
 ```bash
 cd ml-model
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt   # if present, or install sklearn/openml manually
+pip install -r requirements.txt
 python train.py
 cp model_config.json ../web/public/model_config.json
 ```
 
-After retraining, always copy the updated `model_config.json` to `web/public/` and rebuild/redeploy the Circom verifier if weights changed.
+After changing weights: update the Circom constants, rebuild keys/verifier, redeploy.
 
 ### 2. Build ZK artifacts (optional — already in `web/public/`)
 
 ```bash
 cd zero-knowledge
-# follow your existing circom/snarkjs build pipeline
+# compile circuit, run trusted setup / contribute, export Verifier.sol
 cp build/credit_classifier_js/credit_classifier.wasm ../web/public/
 cp keys/credit_classifier_0001.zkey ../web/public/
-cp ../blockchain/contracts/Verifier.sol   # regenerate after circuit change
 ```
 
-### 3. Deploy contracts to Sepolia
+### 3. Deploy contracts (Sepolia)
 
 ```bash
 cd blockchain
@@ -79,85 +111,58 @@ npx hardhat compile
 npx hardhat ignition deploy ignition/modules/CreditZKMLModule.ts --network sepolia --reset
 ```
 
-Update `NG_APP_REGISTRY_ADDRESS` in `web/.env` (copy from `web/.env.example` if needed) with the deployed `CreditRegistry` address from the Ignition output. The value is injected at build time via `web/src/environments/environment.ts` (auto-generated on `npm start` / `npm run build`).
+Set `NG_APP_REGISTRY_ADDRESS` in `web/.env` (see `web/.env.example`). Build injects it via `web/scripts/generate-environment.mjs`.
 
 ### 4. Run the frontend
 
 ```bash
 cd web
 npm install
-ng serve
+npm start   # or: ng serve
 ```
 
-Open **http://localhost:4200/**
+Open http://localhost:4200/
 
-### 5. Deploy frontend to Netlify
+### 5. Netlify
 
-The repo root includes `netlify.toml` (base directory `web/`, publish `dist/web/browser`).
+Root `netlify.toml` builds `web/`. Set `NG_APP_REGISTRY_ADDRESS` in the Netlify env UI.
 
-1. Connect the GitHub repo in [Netlify](https://app.netlify.com/).
-2. **Site configuration → Environment variables** — add:
-   - `NG_APP_REGISTRY_ADDRESS` = your deployed `CreditRegistry` address (same as in `web/.env.example`)
-   - optional: `NG_APP_ENV` = `production` (Netlify sets `NODE_ENV=production` during build anyway)
-3. Deploy. `npm run build` runs `prebuild` → `env:generate`, which reads Netlify env vars and bakes the address into the bundle.
-
-Local `.env` is not uploaded (gitignored). Only Netlify dashboard variables are used in CI.
-
-SPA routing (`/about`) is handled by `netlify.toml` redirects.
-
-## Run Tests
-
-### Frontend preprocessing (matches Python pipeline)
+## Tests & benchmarks
 
 ```bash
-cd web
-npm test
+# Preprocessing parity with Python (exampleRaw → features, score, decision)
+cd web && npm test
+
+# Registry, replay, weight substitution, witness forgery, gas
+cd blockchain && npx hardhat test
+
+# Optional prover timing (Node)
+cd zero-knowledge && node benchmark-prover.mjs
 ```
 
-This verifies that `exampleRaw` from `model_config.json` produces the same fixed-point features (`[-240, -28, -870, -1015]`), score (`786`), and decision (`1`) as `ml-model/train.py`.
+Manual UI check (`model_config.json` → `exampleRaw`): duration **18**, amount **3190**, installment **2**, age **24** → expected **approved**.
 
-### Manual sanity check with example values
+Published measurement snapshots: `blockchain/gas-benchmark.json`, `zero-knowledge/prover-benchmark.json`, `ml-model/evaluation_report.json`.
 
-Use these form values (from `exampleRaw`):
-
-| Field | Value |
-|-------|-------|
-| Duration | 18 |
-| Credit Amount | 3190 |
-| Installment Commitment | 2 |
-| Age | 24 |
-
-Expected model decision: **Credit approved**.
-
-## What Is Stored On-Chain
-
-Per `(userAddress, applicationId)` the registry stores:
-
-- `isApproved` — model decision (0 or 1)
-- `timestamp` — block time
-- `proofHash` — `keccak256(abi.encode(proofA, proofB, proofC, publicSignals))` — audit anchor linking this exact proof and decision
-- `exists` — replay protection flag
-
-The contract also tracks `usedProofHashes` so the same proof cannot be anchored twice.
-
-The full ZK proof is not stored in contract storage (it remains in transaction calldata). Raw features and model weights are never persisted on-chain.
-
-## Security & Privacy
-
-- **Verify, don't trust:** The verifier checks the Groth16 proof against the deployed circuit.
-- **Private inputs:** `x[4]` are witness inputs in Circom; only public output `y` is revealed in the proof.
-- **Preprocessing parity:** The Angular app uses the same StandardScaler parameters and fixed-point arithmetic as the Python training pipeline.
-
-## Project Structure
+## Project layout
 
 ```
 zkml-credit-project/
-├── ml-model/           # Training + model_config.json
-├── zero-knowledge/     # Circom circuit + keys
-├── blockchain/       # Solidity + Hardhat Ignition
-└── web/                # Angular frontend
-    └── public/
-        ├── model_config.json
-        ├── credit_classifier.wasm
-        └── credit_classifier_0001.zkey
+├── ml-model/                 # train.py, evaluate.py, model_config.json
+├── zero-knowledge/
+│   ├── circuits/             # credit_classifier(.circom), v2, tampered variants
+│   ├── keys/                 # zkey + verification_key.json
+│   ├── attack/               # H1 weight / VK swap experiment artifacts
+│   ├── attack-witness/       # H1 witness-forgery experiment
+│   └── benchmark-prover.mjs
+├── blockchain/
+│   ├── contracts/            # CreditRegistry, Verifier, PlainScoring, mocks
+│   ├── test/                 # unit + attack + gas benchmarks
+│   └── ignition/             # Sepolia deployment
+├── web/                      # Angular app + public wasm/zkey/config
+└── netlify.toml
 ```
+
+## License / academic use
+
+Built as a master's thesis demonstration of ZKML in finance. Use and cite accordingly; not a production credit-decision system.

@@ -31,7 +31,7 @@
         </li>
         <li class="flex gap-3">
           <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500"></span>
-          <span>MetaMask submits the proof to <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-800">CreditRegistry</code>, which verifies it on-chain and stores only <em>approved / denied</em> plus a timestamp.</span>
+          <span>MetaMask submits the proof to <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-800">CreditRegistry</code>, which verifies it on-chain and stores only <em>approved / denied</em>, a timestamp and a hash of the proof.</span>
         </li>
       </ul>
     </section>
@@ -50,7 +50,7 @@
         </div>
         <div>
           <dt class="font-semibold text-slate-900"><code class="text-indigo-700">blockchain/</code> — Solidity, Hardhat Ignition</dt>
-          <dd class="mt-1 text-slate-600"><code class="rounded bg-slate-100 px-1 text-sm">Groth16Verifier.sol</code> checks proofs; <code class="rounded bg-slate-100 px-1 text-sm">CreditRegistry.sol</code> anchors decisions per wallet and application ID.</dd>
+          <dd class="mt-1 text-slate-600">The SnarkJS-generated <code class="rounded bg-slate-100 px-1 text-sm">Groth16Verifier</code> checks proofs; <code class="rounded bg-slate-100 px-1 text-sm">CreditRegistry.sol</code> anchors decisions per wallet and application ID. Its verifier address is immutable, so the deployed model cannot be swapped.</dd>
         </div>
         <div>
           <dt class="font-semibold text-slate-900"><code class="text-indigo-700">web/</code> — Angular, Tailwind, ethers.js</dt>
@@ -67,7 +67,7 @@
   → Circom private inputs x[4]
   → Groth16 proof + public signal y (0 or 1)
   → CreditRegistry.anchorCreditDecision()
-  → On-chain: isApproved, timestamp, applicationId</code></pre>
+  → On-chain: isApproved, timestamp, proofHash, applicationId</code></pre>
       <p class="mt-4 text-sm text-slate-600">
         Raw form values are never sent as plain calldata. The chain sees the proof, the public decision, and registry metadata—not your inputs or model weights.
       </p>
@@ -78,15 +78,19 @@
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
           <h3 class="mb-2 font-semibold text-emerald-900">Verify, don't trust</h3>
-          <p class="text-sm text-emerald-800">The verifier checks the Groth16 proof against the deployed circuit—no server-side scoring.</p>
+          <p class="text-sm text-emerald-800">The verifier checks the Groth16 proof against the deployed circuit—no server-side scoring. Weights are circuit constants, not witness inputs.</p>
         </div>
         <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
           <h3 class="mb-2 font-semibold text-indigo-900">Private witness</h3>
           <p class="text-sm text-indigo-800"><code class="text-xs">x[4]</code> are private Circom inputs; only public output <code class="text-xs">y</code> is revealed in the proof.</p>
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-4 sm:col-span-2">
+        <div class="rounded-xl border border-slate-200 bg-white p-4">
           <h3 class="mb-2 font-semibold text-slate-900">Pipeline parity</h3>
-          <p class="text-sm text-slate-600">Angular preprocessing matches <code class="rounded bg-slate-100 px-1 text-sm">ml-model/train.py</code> (same scaler, weights, fixed-point division). Unit tests assert the documented example row produces decision <code class="rounded bg-slate-100 px-1 text-sm">1</code>.</p>
+          <p class="text-sm text-slate-600">Angular preprocessing matches <code class="rounded bg-slate-100 px-1 text-sm">ml-model/train.py</code> (same scaler and fixed-point math). Unit tests lock the documented example to decision <code class="rounded bg-slate-100 px-1 text-sm">1</code>.</p>
+        </div>
+        <div class="rounded-xl border border-amber-100 bg-amber-50 p-4">
+          <h3 class="mb-2 font-semibold text-amber-900">Research boundary</h3>
+          <p class="text-sm text-amber-900">The proof shows that some 32-bit vector yields <code class="text-xs">y</code> under the published weights—not that the form fields are attested bank data. Scaler runs client-side, outside the circuit.</p>
         </div>
       </div>
     </section>
@@ -98,8 +102,12 @@
         <li><code class="text-sm">isApproved</code> — model decision (0 or 1)</li>
         <li><code class="text-sm">timestamp</code> — block time</li>
         <li><code class="text-sm">proofHash</code> — fingerprint of the verified proof + public signal (audit anchor)</li>
-        <li><code class="text-sm">exists</code> — replay protection</li>
+        <li><code class="text-sm">exists</code> — this application ID is already taken for this wallet</li>
       </ul>
+      <p class="mt-4 text-sm text-slate-600">
+        A separate <code class="text-xs">usedProofHashes</code> mapping blocks anchoring the same proof a second time,
+        from any account and under any application ID.
+      </p>
       <p class="mt-4 text-sm text-slate-500">
         After anchoring, the UI shows the proof hash and application ID. On Etherscan, use
         <code class="text-xs">userApplications(wallet, applicationId)</code> or filter
@@ -131,14 +139,10 @@
     <section class="mb-12">
       <h2 class="mb-4 text-2xl font-bold text-slate-900">Repository layout</h2>
       <pre class="overflow-x-auto rounded-xl border border-slate-200 bg-slate-100 p-5 text-sm text-slate-800"><code>zkml-credit-project/
-├── ml-model/           # Training + model_config.json
-├── zero-knowledge/     # Circom circuit + keys
-├── blockchain/         # Solidity + Hardhat Ignition
-└── web/                # Angular frontend
-    └── public/
-        ├── model_config.json
-        ├── credit_classifier.wasm
-        └── credit_classifier_0001.zkey</code></pre>
+├── ml-model/           # Training, evaluate.py, model_config.json
+├── zero-knowledge/     # Circom + keys + attack / prover benchmarks
+├── blockchain/         # Registry, verifier, Hardhat attack &amp; gas tests
+└── web/                # Angular SPA + public wasm / zkey / config</code></pre>
     </section>
 
     <div class="flex flex-col items-center gap-4 border-t border-slate-200 pt-10 sm:flex-row sm:justify-between">
