@@ -77,12 +77,12 @@ template CreditClassifier() {
     // -----------------------------
     // SIGN CHECK (score >= 0)
     // -----------------------------
-    // Max score to ~2.27 * 10^12 (mieści się w 42 bitach). 
-    // Dodajemy 2^43, aby zagwarantować, że wynik będzie zawsze dodatni.
+    // |score| <= |b| + sum(ceil(2^31 * |w[i]| / SCALE)) < 3.2 * 10^9 < 2^32
+    // (wyprowadzenie w punkcie 3.2.3 pracy). Dodajemy 2^43, co daje 11 bitow
+    // zapasu i gwarantuje nieujemnosc argumentu komparatora.
     signal shiftedScore;
     shiftedScore <== score[4] + (1 << 43);
 
-    // Sprawdzamy czy score >= 0  =>  czy shiftedScore >= 2^43
     component isPositive = GreaterEqThan(44); 
     isPositive.in[0] <== shiftedScore;
     isPositive.in[1] <== (1 << 43);

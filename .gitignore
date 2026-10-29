@@ -18,6 +18,16 @@ zero-knowledge/**/*.ptau
 
 zero-knowledge/**/*.wtns
 
+# Artefakty generowane w eksperymentach do H1. Zrodla obwodow, dowody i
+# sygnaly publiczne sa wersjonowane; wyniki kompilacji i klucze fazy drugiej
+# odtwarza sie poleceniami z punktu 4.8 pracy.
+zero-knowledge/attack/**/*.r1cs
+zero-knowledge/attack/**/*.zkey
+zero-knowledge/attack/**/*_js/
+zero-knowledge/attack-witness/**/*.r1cs
+zero-knowledge/attack-witness/**/*.zkey
+zero-knowledge/attack-witness/**/*_js/
+
 zero-knowledge/proof.json
 zero-knowledge/public.json
 
@@ -39,3 +49,8 @@ web/coverage/
 node_modules/
 npm-debug.log
 yarn-error.log
+
+# Tekst pracy magisterskiej i narzedzia do skladania dokumentu.
+# Repozytorium zawiera wylacznie kod prototypu.
+docs/
+tools/
